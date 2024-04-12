@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status, Depends, Header
 from pydantic import BaseModel, HttpUrl
 from api import database
-from settings import API_ENDPOINT
+from settings import API_ENDPOINT, JWT_SECRET
 
 import random
 import string
@@ -21,6 +21,12 @@ def random_string_exists(random_string):
     result = database.execute_query("SELECT COUNT(*) FROM urls WHERE shorturl = ?", (random_string,))
     return result[0][0] > 0
 
+# Middleware to check JWT token
+async def check_token(token: Optional[str] = Header(None)):
+    if not token or token != JWT_SECRET:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    return token
+
 # Root endpoint
 @router.get("/")
 def root():
@@ -32,7 +38,7 @@ class ShortenURLRequest(BaseModel):
 
 # Create Shorten URL on the DB
 @router.post(API_ENDPOINT)
-def shorten_url(url_request: ShortenURLRequest, vanity_url: Optional[str] = None):
+def shorten_url(url_request: ShortenURLRequest, vanity_url: Optional[str] = None, token: str = Depends(check_token)):
     if vanity_url:
         # Check if the specified vanity URL already exists in the database
         if random_string_exists(vanity_url):
@@ -73,7 +79,7 @@ def redirect_to_destination(random_string: str, response: Response):
 
 # PATCH - Update the destination of an existing Vanity URL
 @router.patch(f"{API_ENDPOINT}/{{vanity_url}}")
-def patch_url(vanity_url: str, update_request: ShortenURLRequest):
+def patch_url(vanity_url: str, update_request: ShortenURLRequest, token: str = Depends(check_token)):
     if not random_string_exists(vanity_url):
         raise HTTPException(status_code=404, detail="Vanity URL doesn't exist.")
     else:
