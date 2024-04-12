@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel, HttpUrl
 from api import database
+from settings import API_ENDPOINT
 
 import random
 import string
@@ -30,7 +31,7 @@ class ShortenURLRequest(BaseModel):
     url: HttpUrl
 
 # Create Shorten URL on the DB
-@router.post("/pog")
+@router.post(API_ENDPOINT)
 def shorten_url(url_request: ShortenURLRequest, vanity_url: Optional[str] = None):
     if vanity_url:
         # Check if the specified vanity URL already exists in the database
@@ -54,7 +55,7 @@ def shorten_url(url_request: ShortenURLRequest, vanity_url: Optional[str] = None
             "link": random_string}, status.HTTP_201_CREATED
 
 # Access shortened url
-@router.get("/pog/{random_string}", status_code=307)  # Use 307 Temporary Redirect
+@router.get(f"{API_ENDPOINT}/{{random_string}}", status_code=307)  # Use 307 Temporary Redirect
 def redirect_to_destination(random_string: str, response: Response):
     # Retrieve the destination URL corresponding to the random string from the database
     result = database.execute_query("SELECT destination FROM urls WHERE shorturl = ?", (random_string,))
@@ -71,7 +72,7 @@ def redirect_to_destination(random_string: str, response: Response):
     return
 
 # PATCH - Update the destination of an existing Vanity URL
-@router.patch("/pog/{vanity_url}")
+@router.patch(f"{API_ENDPOINT}/{{vanity_url}}")
 def patch_url(vanity_url: str, update_request: ShortenURLRequest):
     if not random_string_exists(vanity_url):
         raise HTTPException(status_code=404, detail="Vanity URL doesn't exist.")
