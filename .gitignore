@@ -160,4 +160,4 @@ cython_debug/
 #.idea/
 
 # ShortPy Related files
-database.db
+*.db
