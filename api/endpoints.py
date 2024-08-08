@@ -74,7 +74,9 @@ def patch_url(vanity_url: str, update_request: ShortenURLRequest, token: str = D
     url_entry = db.query(URL).filter(URL.shorturl == vanity_url).first()
     if not url_entry:
         raise HTTPException(status_code=404, detail="Vanity URL doesn't exist.")
-    url_entry.destination = update_request.url
+    
+    new_destination_url = update_request.url
+    url_entry.destination = str(new_destination_url)  # Ensure the URL is converted to a string if necessary
     db.commit()
     db.refresh(url_entry)
-    return {"message": "URL updated successfully", "New Destination URL": update_request.url}
+    return {"message": "URL updated successfully", "New Destination URL": new_destination_url}
