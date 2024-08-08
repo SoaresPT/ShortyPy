@@ -61,7 +61,7 @@ def shorten_url(url_request: ShortenURLRequest, vanity_url: Optional[str] = None
             "link": random_string
         }, status.HTTP_201_CREATED
 
-@router.get(f"{API_ENDPOINT}/{{random_string}}", status_code=307)
+@router.get(f"{API_ENDPOINT}/{{url}}", status_code=307)
 def redirect_to_destination(random_string: str, response: Response, db: Session = Depends(get_db)):
     url_entry = db.query(URL).filter(URL.shorturl == random_string).first()
     if not url_entry:
